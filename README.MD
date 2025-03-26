@@ -1,6 +1,3 @@
-Creating an SQL schema for a WhatsApp clone involves defining the structure of the database tables that will hold information related to users, messages, chats, groups, media, and other related entities.
-
-Here’s a basic SQL schema for a WhatsApp clone:
 
 ### 1. **Users Table**
 This table holds the information for all the users.
