@@ -54,7 +54,7 @@ func HandleWebSocket(c *websocket.Conn) {
 			return
 		case utils.SuccessResponse:
 			log.Println("Success Response:", r.Data)
-			c.WriteMessage(websocket.TextMessage, []byte(msg.Message)) // Or msg.Message if you want to echo
+			c.WriteMessage(websocket.TextMessage, []byte(msg.Message))
 			return
 		default:
 			// Default case if response type is unrecognized

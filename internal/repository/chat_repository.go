@@ -142,3 +142,70 @@ func GetMessagesListRepository(pageStr string, limitStr string, chatId string) (
 
 	return responseData, nil
 }
+
+type Users struct {
+	ID         string
+	Image      string
+	FirstName  string
+	LastName   string
+	SchoolName string
+}
+
+func GetUserChatListRepository(userID string) ([]Users, error) {
+	var users []Users
+
+	// Fetch all users the logged-in user has chatted with
+	err := initializer.DB.Table("chat_participants as cp").
+		Select("u.id, u.first_name , u.last_name , u.school_name , u.image").
+		Joins("JOIN users u ON u.id = cp.user_id").
+		Joins("JOIN chats c ON c.id = cp.chat_id").
+		Where("cp.chat_id IN (?)",
+			initializer.DB.Table("chat_participants").Select("chat_id").Where("user_id = ?", userID)).
+		Where("cp.user_id != ?", userID).
+		Group("u.id").
+		Find(&users).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func RemoveUserFromChatRepository(loggedInUserID, otherUserID string) (interface{}, error) {
+	// Step 1: Find the chat between the logged-in user and the other user
+	var chatID string
+	err := initializer.DB.Table("chat_participants as cp").
+		Select("cp.chat_id").
+		Joins("JOIN chat_participants cp2 ON cp.chat_id = cp2.chat_id").
+		Where("cp.user_id = ? AND cp2.user_id = ?", loggedInUserID, otherUserID).
+		Limit(1).
+		Scan(&chatID).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	if chatID == "" {
+		return nil, err
+	}
+
+	// Step 2: Delete all messages in this chat
+	err = initializer.DB.Where("chat_id = ?", chatID).Delete(&model.Messages{}).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Step 3: Delete participants in this chat
+	err = initializer.DB.Where("chat_id = ?", chatID).Delete(&model.ChatParticipants{}).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Step 4: Delete the chat itself
+	err = initializer.DB.Where("id = ?", chatID).Delete(&model.Chats{}).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return "chat deleted", nil
+}

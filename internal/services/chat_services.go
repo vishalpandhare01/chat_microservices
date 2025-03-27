@@ -95,7 +95,15 @@ func CreateMessagesServices(body *model.Messages) interface{} {
 }
 
 // get messages list services
-func GetMessagesListServices(pageStr string, limitStr string, chatId string) interface{} {
+func GetMessagesListServices(pageStr string, limitStr string, chatId string, userId string) interface{} {
+
+	if !repository.CheckChatIdWithSendorIdExistRepository(chatId, userId) {
+		return utils.ErrorResponse{
+			Code:    403,
+			Message: "You are Not Authorized!!",
+		}
+	}
+
 	response, err := repository.GetMessagesListRepository(pageStr, limitStr, chatId)
 	if err != nil {
 		return utils.ErrorResponse{
@@ -107,6 +115,40 @@ func GetMessagesListServices(pageStr string, limitStr string, chatId string) int
 	return utils.SuccessResponse{
 		Code:    200,
 		Message: "success",
+		Data:    response,
+	}
+}
+
+// get list of chat of user
+func GetChatListServices(userId string) interface{} {
+	response, err := repository.GetUserChatListRepository(userId)
+	if err != nil {
+		return utils.ErrorResponse{
+			Code:    500,
+			Message: err.Error(),
+		}
+	}
+
+	return utils.SuccessResponse{
+		Code:    200,
+		Message: "success",
+		Data:    response,
+	}
+}
+
+// delete chat
+func RemoveUserFromChatListServices(userid string, chatUserId string) interface{} {
+	response, err := repository.RemoveUserFromChatRepository(userid, chatUserId)
+	if err != nil {
+		return utils.ErrorResponse{
+			Code:    500,
+			Message: err.Error(),
+		}
+	}
+
+	return utils.SuccessResponse{
+		Code:    200,
+		Message: "chat deleted successfully",
 		Data:    response,
 	}
 }
