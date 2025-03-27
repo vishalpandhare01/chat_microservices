@@ -1,138 +1,182 @@
+### 1. **Users Table**
+This table stores user information such as name, phone number, and status.
 
-### Real-World Example: Real-Time Messaging App Flow
+```sql
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(15) UNIQUE NOT NULL,
+    status VARCHAR(255),
+    profile_picture_url VARCHAR(255),
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-In this scenario, let’s assume we're building a **real-time chat app** where users can send messages in both **private chats** and **group chats**. We'll be using technologies like **Go** (as the backend), **GORM** for database interaction, **WebSockets** for real-time communication, and a frontend like **React** for the user interface.
+**Example Data:**
 
-Here's a step-by-step guide showing how the app would work:
+```sql
+INSERT INTO users (name, phone_number, status, profile_picture_url) VALUES
+('John Doe', '1234567890', 'Hey there! I am using WhatsApp.', 'https://example.com/profile1.jpg'),
+('Jane Smith', '0987654321', 'Busy', 'https://example.com/profile2.jpg');
+```
 
-### Step 1: **User Registration/Login**
+### 2. **Chats Table**
+This table stores information about a chat. A chat could be a group or a one-on-one chat.
 
-- **Goal:** Users need to authenticate before they can access the app.
+```sql
+CREATE TABLE chats (
+    chat_id INT AUTO_INCREMENT PRIMARY KEY,
+    chat_name VARCHAR(255),
+    is_group BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-#### Flow:
-1. **User Registers/Login:**
-   - The user sends a request to the backend to either register or login with their credentials (email and password).
-   - After successful authentication, the backend generates a **JWT token** for the user.
-   - This JWT token is sent back to the client (e.g., the React frontend), which stores it for subsequent requests.
+**Example Data:**
 
-2. **Backend Logic:**
-   - Using the `UserID` from the JWT token, the backend fetches the user's details from the database.
+```sql
+INSERT INTO chats (chat_name, is_group) VALUES
+('Family Group', TRUE),
+('John and Jane', FALSE);
+```
 
-### Step 2: **Creating a Chat**
+### 3. **Chat Participants Table**
+This table keeps track of users that are part of a chat.
 
-- **Goal:** Users can create private or group chats.
+```sql
+CREATE TABLE chat_participants (
+    chat_id INT,
+    user_id INT,
+    join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (chat_id, user_id),
+    FOREIGN KEY (chat_id) REFERENCES chats(chat_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+```
 
-#### Flow:
-1. **User A Creates a New Chat (Private or Group):**
-   - **Private Chat:**
-     - User A creates a private chat with User B.
-     - A `Chats` record is created with `IsGroup = false`.
-     - A `UserChats` record is created for both User A and User B linking them to the chat.
+**Example Data:**
 
-   - **Group Chat:**
-     - User A creates a new group chat, say "Work Group."
-     - A `Chats` record is created with `IsGroup = true` and a unique `ChatID`.
-     - The `Groups` table is updated with group details such as `GroupName` and `CreatorID`.
-     - User A is added to the `GroupMember` table.
-     - Other members (e.g., User B, User C) are added to the group and added to the `GroupMember` table.
+```sql
+INSERT INTO chat_participants (chat_id, user_id) VALUES
+(1, 1), -- John is part of Family Group
+(1, 2), -- Jane is part of Family Group
+(2, 1), -- John is part of John and Jane chat
+(2, 2); -- Jane is part of John and Jane chat
+```
 
-2. **Backend Workflow for Creating a Chat:**
-   - Create the appropriate records in the `Chats`, `UserChats`, and `Groups` tables.
-   - Respond to the frontend with the chat's details (`ChatID`, `ChatName`, `IsGroup`).
+### 4. **Messages Table**
+This table stores the messages sent by users in each chat.
 
-### Step 3: **Sending a Message**
+```sql
+CREATE TABLE messages (
+    message_id INT AUTO_INCREMENT PRIMARY KEY,
+    chat_id INT,
+    sender_id INT,
+    message_text TEXT,
+    message_type ENUM('text', 'image', 'video', 'audio', 'document') DEFAULT 'text',
+    media_url VARCHAR(255),
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chat_id) REFERENCES chats(chat_id),
+    FOREIGN KEY (sender_id) REFERENCES users(user_id)
+);
+```
 
-- **Goal:** Users can send messages to their chats (either private or group).
+**Example Data:**
 
-#### Flow:
-1. **User A Sends a Message:**
-   - User A opens the chat with User B or the group (e.g., "Work Group").
-   - User A types a message, say "Hello, let's start working!".
-   - The frontend (React app) sends a POST request to the backend with the following data:
-     - `SenderID` = User A's ID.
-     - `ChatID` = the unique ID for the chat (either private or group).
-     - `MessageType` = `"text"`.
-     - `Message` = `"Hello, let's start working!"`.
+```sql
+INSERT INTO messages (chat_id, sender_id, message_text, message_type, media_url) VALUES
+(1, 1, 'Hello family!', 'text', NULL),
+(1, 2, 'Hey John!', 'text', NULL),
+(2, 1, 'Hi Jane, how are you?', 'text', NULL);
+```
 
-2. **Backend Logic:**
-   - A new record is created in the `Messages` table with the message data.
-   - The message is linked to the chat through `ChatID`, and it's associated with `SenderID`.
-   - The backend returns a response with the message ID and timestamp to the frontend.
+### 5. **Media Table**
+This table stores information about media files (images, videos, etc.) uploaded by users in the chats.
 
-3. **Real-Time Message Delivery (via WebSockets):**
-   - **WebSocket Connection**: The app establishes a WebSocket connection between the frontend and backend after the user logs in.
-   - **Push Notification**: When the backend creates a new message, it pushes the message through the WebSocket to the recipient(s).
-   - **Example:** If it's a group chat, the backend sends the message to all group members (User A, User B, and User C). If it's a private chat, the message is sent to the other participant.
+```sql
+CREATE TABLE media (
+    media_id INT AUTO_INCREMENT PRIMARY KEY,
+    message_id INT,
+    media_type ENUM('image', 'video', 'audio', 'document') NOT NULL,
+    media_url VARCHAR(255) NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (message_id) REFERENCES messages(message_id)
+);
+```
 
-4. **Frontend Updates:**
-   - When the frontend receives the WebSocket event, it updates the UI to display the new message in real-time.
+**Example Data:**
 
-5. **Mark as Read:**
-   - The frontend will mark the message as read when the user opens the chat. It will send a `PUT` request to the backend to update the `IsRead` field in the `Messages` table.
+```sql
+INSERT INTO media (message_id, media_type, media_url) VALUES
+(1, 'image', 'https://example.com/image1.jpg'),
+(2, 'video', 'https://example.com/video1.mp4');
+```
 
-### Step 4: **Real-Time Chat Interaction Example**
+### 6. **Message Status Table**
+This table keeps track of message statuses (sent, delivered, read).
 
-#### Example: **User A** sends a message in the group chat.
+```sql
+CREATE TABLE message_status (
+    message_id INT,
+    user_id INT,
+    status ENUM('sent', 'delivered', 'read') NOT NULL,
+    status_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (message_id, user_id),
+    FOREIGN KEY (message_id) REFERENCES messages(message_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+```
 
-- **User A** sends a message `"Hello everyone, let's study for the exam!"`.
-- The backend receives the message and stores it in the database:
-  ```go
-  message := Messages{
-      SenderID:    userID,  // User A's ID
-      ChatID:      chatID,  // "Math Study Group" chat ID
-      MessageType: "text",
-      MediaUrl:    "",     // No media attached
-      IsRead:      false,   // Message is unread by group members
-  }
-  db.Create(&message) // Save message to the database
-  ```
-- **WebSocket Notification**: The backend sends a WebSocket event to all users in the group chat.
-  ```javascript
-  socket.emit('newMessage', {
-    chatID: 'MathStudyGroupID',
-    senderID: 'UserA',
-    message: 'Hello everyone, let\'s study for the exam!',
-  });
-  ```
-- **User B and User C** (other members of the group) receive the message via WebSocket and see it in real-time.
-  - If the users haven't read the message yet, the backend will show it as unread.
+**Example Data:**
 
-#### Step 5: **Handling Admin Actions in Group Chats**
+```sql
+INSERT INTO message_status (message_id, user_id, status) VALUES
+(1, 1, 'sent'),
+(1, 2, 'delivered'),
+(2, 2, 'read');
+```
 
-- **Admin User (User A)** wants to remove **User C** from the group "Math Study Group."
-  - User A uses the app’s UI to remove User C.
-  - A request is sent to the backend to update the `GroupMember` table by removing User C from the group.
-  - The WebSocket system will also notify **User C** and other members of the group about the change.
+### 7. **Contacts Table**
+This table stores the contact information between users, allowing them to see their friends.
+
+```sql
+CREATE TABLE contacts (
+    user_id INT,
+    contact_id INT,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, contact_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (contact_id) REFERENCES users(user_id)
+);
+```
+
+**Example Data:**
+
+```sql
+INSERT INTO contacts (user_id, contact_id) VALUES
+(1, 2), -- John has Jane as a contact
+(2, 1); -- Jane has John as a contact
+```
+
+### 8. **Blocking Table (optional)**
+A table to manage users who block others.
+
+```sql
+CREATE TABLE blocks (
+    blocker_id INT,
+    blocked_id INT,
+    blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (blocker_id, blocked_id),
+    FOREIGN KEY (blocker_id) REFERENCES users(user_id),
+    FOREIGN KEY (blocked_id) REFERENCES users(user_id)
+);
+```
+
+**Example Data:**
+
+```sql
+INSERT INTO blocks (blocker_id, blocked_id) VALUES
+(1, 2); -- John has blocked Jane
+```
 
 ---
-
-### Step 6: **Deleting a Chat**
-
-- **Goal:** Users can delete their chats (either private or group).
-  - **Private Chat:** When a user deletes a private chat, their record in `UserChats` is removed, but the actual chat in `Chats` remains unless both participants delete it.
-  - **Group Chat:** If the last user in the group leaves or deletes the group, the group’s `Chats` record will be deleted from the database.
-
-#### Flow:
-1. **User A Deletes a Private Chat:**
-   - The frontend sends a `DELETE` request to the backend to remove `UserChats` for User A and User B in that particular chat.
-
-2. **Group Chat Deletion:**
-   - When all members leave a group, the backend deletes the `Chats` record associated with the group.
-
----
-
-### Summary of Real-World Workflow:
-
-- **Registration/Login:** Authenticated using JWT.
-- **Creating Chat:** Users can create private or group chats. A `Chat` record is created in the database.
-- **Sending Messages:** Real-time message sending using WebSockets. Messages are saved to the database and pushed to other users in real-time.
-- **Group Management:** Admins can add/remove users from groups. Real-time notifications are sent via WebSockets.
-- **Deleting Chats:** Chats can be deleted, and users will be removed from the `UserChats` and `GroupMember` tables as necessary.
-
-### Technologies:
-- **Go + GORM** (Backend & Database)
-- **WebSockets** (Real-Time Communication)
-- **React** (Frontend UI)
-- **PostgreSQL/MySQL** (Database for persistence)
-
-This is a working real-time chat app with group functionality based on your schema. Users can interact, send messages, receive real-time updates, and manage their chats.

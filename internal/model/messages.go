@@ -9,7 +9,7 @@ import (
 
 type Chats struct {
 	ID        string    `gorm:"type:varchar(36);primeryKey;not:null"`
-	UserID    string    `gorm:"type:varchar(36);not:null"`
+	CreatorID string    `gorm:"type:varchar(36);not:null"` //user id
 	ChatName  string    `gorm:"type:varchar(100);"`
 	IsGroup   bool      `gorm:"type:boolean;default:false"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
@@ -39,6 +39,7 @@ type Messages struct {
 	SenderID    string    `gorm:"type:varchar(36);not:null"` //user id
 	ChatID      string    `gorm:"type:varchar(36);not:null"`
 	MediaUrl    string    `gorm:"type:text"`
+	Message     string    `gorm:"type:text"`
 	MessageType string    `gorm:"enum('text' , 'image' ,'video' ,'document')"`
 	IsRead      bool      `gorm:"type:boolean;default:false"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
