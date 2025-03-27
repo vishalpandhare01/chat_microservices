@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gofiber/websocket/v2"
@@ -25,21 +26,18 @@ type Message struct {
 func HandleWebSocket(c *websocket.Conn) {
 	defer c.Close()
 
-	// Uncomment and handle JWT Token if needed
-	// token := c.Locals("Authorization").(string)
-	// claims, err := validateToken(token)
-	// if err != nil || !claims.Valid {
-	//     c.WriteMessage(websocket.TextMessage, []byte("Unauthorized"))
-	//     return
-	// }
-	// userID := claims.Claims.(jwt.MapClaims)["user_id"].(float64)
+	userId, ok := c.Locals("userId").(string)
+	if !ok {
+		// Handle the error if the type assertion fails
+		fmt.Println("userId is not a string")
+	}
 
-	// Mocked userID for the example
-	// userID := "1234567890"
+	fmt.Println("chat userId: ", userId)
 
 	for {
 		var msg *model.Messages
 		err := c.ReadJSON(&msg)
+		msg.SenderID = userId
 		if err != nil {
 			log.Println("Error reading message:", err)
 			break // Optionally break the loop if error occurs.

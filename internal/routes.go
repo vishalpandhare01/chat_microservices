@@ -15,6 +15,6 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/api/v1/chat/:chatId", middleware.Authentication, handler.GetChatMessagesByChatIdHandler)
 
 	// WebSocket route
-	app.Get("/api/v1/chat", websocket.New(handler.HandleWebSocket))
+	app.Get("/api/v1/chat", middleware.Authentication, websocket.New(handler.HandleWebSocket))
 	fmt.Println("All routes connected 🚀")
 }
