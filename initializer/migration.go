@@ -10,6 +10,8 @@ import (
 func MigrateTables() {
 	err := DB.AutoMigrate(
 		model.Chats{},
+		model.ChatParticipants{},
+		model.Messages{},
 	)
 	if err != nil {
 		log.Fatal("Migration failed")

@@ -14,8 +14,9 @@ type Chats struct {
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 }
 
-func (C *Chats) BeforeCreate(tx *gorm.DB) {
+func (C *Chats) BeforeCreate(tx *gorm.DB) (err error) {
 	C.ID = uuid.New().String()
+	return
 }
 
 type ChatParticipants struct {
@@ -26,8 +27,9 @@ type ChatParticipants struct {
 	Chats     *Chats    `gorm:"foreignKey:ChatID;constraint:OnDelete:CASCADE;"`
 }
 
-func (C *ChatParticipants) BeforeCreate(tx *gorm.DB) {
+func (C *ChatParticipants) BeforeCreate(tx *gorm.DB) (err error) {
 	C.ID = uuid.New().String()
+	return
 }
 
 type Messages struct {
@@ -36,14 +38,15 @@ type Messages struct {
 	ChatID      string    `gorm:"type:varchar(36);not:null"`
 	MediaUrl    string    `gorm:"type:text"`
 	Message     string    `gorm:"type:text"`
-	MessageType string    `gorm:"enum('text' , 'image' ,'video' ,'document')"`
+	MessageType string    `gorm:"enum('text' , 'image' ,'video' ,'document');not:null"`
 	IsRead      bool      `gorm:"type:boolean;default:false"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 	Chats       *Chats    `gorm:"foreignKey:ChatID;constraint:OnDelete:CASCADE;"`
 }
 
-func (C *Messages) BeforeCreate(tx *gorm.DB) {
+func (C *Messages) BeforeCreate(tx *gorm.DB) (err error) {
 	C.ID = uuid.New().String()
+	return
 }
 
 type Groups struct {
@@ -56,8 +59,9 @@ type Groups struct {
 	Chats     *Chats    `gorm:"foreignKey:ChatID;constraint:OnDelete:CASCADE;"`
 }
 
-func (C *Groups) BeforeCreate(tx *gorm.DB) {
+func (C *Groups) BeforeCreate(tx *gorm.DB) (err error) {
 	C.ID = uuid.New().String()
+	return
 }
 
 type GroupMember struct {
@@ -68,6 +72,7 @@ type GroupMember struct {
 	Chats     *Chats    `gorm:"foreignKey:ChatID;constraint:OnDelete:CASCADE;"`
 }
 
-func (C *GroupMember) BeforeCreate(tx *gorm.DB) {
+func (C *GroupMember) BeforeCreate(tx *gorm.DB) (err error) {
 	C.ID = uuid.New().String()
+	return
 }
