@@ -9,7 +9,6 @@ import (
 
 type Chats struct {
 	ID        string    `gorm:"type:varchar(36);primeryKey;not:null"`
-	CreatorID string    `gorm:"type:varchar(36);not:null"` //user id
 	ChatName  string    `gorm:"type:varchar(100);"`
 	IsGroup   bool      `gorm:"type:boolean;default:false"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
@@ -19,18 +18,15 @@ func (C *Chats) BeforeCreate(tx *gorm.DB) {
 	C.ID = uuid.New().String()
 }
 
-type UserChats struct {
+type ChatParticipants struct {
 	ID        string    `gorm:"type:varchar(36);primeryKey;not:null"`
-	SchoolID  string    `gorm:"type:varchar(36);not:null"`
-	ClassID   string    `gorm:"type:varchar(36);"`
 	UserID    string    `gorm:"type:varchar(36);not:null"`
 	ChatID    string    `gorm:"type:varchar(36);not:null"`
-	IsAdmin   bool      `gorm:"type:boolean;default:false"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	Chats     *Chats    `gorm:"foreignKey:ChatID;constraint:OnDelete:CASCADE;"`
 }
 
-func (C *UserChats) BeforeCreate(tx *gorm.DB) {
+func (C *ChatParticipants) BeforeCreate(tx *gorm.DB) {
 	C.ID = uuid.New().String()
 }
 

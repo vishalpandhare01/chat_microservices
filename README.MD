@@ -179,4 +179,115 @@ INSERT INTO blocks (blocker_id, blocked_id) VALUES
 (1, 2); -- John has blocked Jane
 ```
 
+
+
+### Scenario Overview:
+1. **User clicks on a user profile**: You will create a chat between the two users if one doesn't exist already.
+2. **User clicks on "Chat"**: A new entry in the `chats` table is created for the two users (this would be a one-on-one chat, as opposed to a group chat).
+3. **Send a message**: When a message is sent, the following things happen:
+   - **`chat_participants`**: The participants (users) are associated with the chat in the `chat_participants` table (this can happen when you first create the chat, or if they are not yet part of the chat).
+   - **`messages`**: A new record is created in the `messages` table with the message content, sender, and chat association.
+
+### Detailed Workflow:
+
+1. **Clicking on User Profile & Creating a Chat**:
+   - When User A clicks on User B's profile to start a chat, you check if a chat already exists between these two users.
+   - If **no chat exists**, you create a new record in the `chats` table (for a one-on-one chat), and associate both users as participants in that chat in the `chat_participants` table.
+
+   **SQL Workflow:**
+
+   - **Create a new chat** (if none exists):
+     ```sql
+     INSERT INTO chats (chat_name, is_group) VALUES ('User A and User B', FALSE);
+     ```
+
+   - **Create participants** (add both users to the chat):
+     ```sql
+     INSERT INTO chat_participants (chat_id, user_id) VALUES
+     (new_chat_id, user_a_id),
+     (new_chat_id, user_b_id);
+     ```
+
+2. **Sending a Message**:
+   - Once the chat exists, when one of the users (say User A) sends a message, a record is created in the `messages` table.
+   - The message is associated with the chat (via `chat_id`), and the sender is recorded (via `sender_id`).
+
+   **SQL Workflow:**
+
+   - **Insert a message**:
+     ```sql
+     INSERT INTO messages (chat_id, sender_id, message_text, message_type) VALUES
+     (existing_chat_id, user_a_id, 'Hello!', 'text');
+     ```
+
+   - If there are media (e.g., an image), you would also insert the media data into the `media` table (if you have this feature).
+
+   - **Track message status**:
+     When the message is sent, you might want to track its status (sent, delivered, read, etc.) in the `message_status` table.
+     ```sql
+     INSERT INTO message_status (message_id, user_id, status) VALUES
+     (message_id, user_b_id, 'delivered'); -- For example, when User B receives the message
+     ```
+
+### Diagram of the Flow:
+
+1. **User clicks on another user** -> **Check if chat exists**:
+   - If no chat exists, create a new chat.
+   - Insert records into `chats` and `chat_participants` for both users.
+
+2. **User sends a message** -> **Insert the message into `messages` table**:
+   - Store the message content and the sender's ID.
+   - Optionally, if media is sent, store media info in the `media` table.
+   - Track the message's delivery status in the `message_status` table.
+
 ---
+
+### Example SQL Workflow (step-by-step):
+Let's assume **User A** sends a message to **User B**.
+
+1. **Check if chat exists**:
+
+```sql
+SELECT chat_id FROM chats
+WHERE (chat_id IN (SELECT chat_id FROM chat_participants WHERE user_id = 1)
+        AND chat_id IN (SELECT chat_id FROM chat_participants WHERE user_id = 2));
+```
+
+If **no chat** exists, create a new chat:
+```sql
+INSERT INTO chats (chat_name, is_group) VALUES ('User A and User B', FALSE);
+```
+
+Assume the `chat_id` for this new chat is `1001`.
+
+2. **Add participants to the new chat**:
+
+```sql
+INSERT INTO chat_participants (chat_id, user_id) VALUES
+(1001, 1), -- User A
+(1001, 2); -- User B
+```
+
+3. **Send a message**:
+User A sends a message:
+```sql
+INSERT INTO messages (chat_id, sender_id, message_text, message_type) VALUES
+(1001, 1, 'Hi, User B!', 'text');
+```
+
+4. **Message Status**:
+Track the message delivery status:
+```sql
+-- Assuming message_id is 10001 (auto-generated after insertion):
+INSERT INTO message_status (message_id, user_id, status) VALUES
+(10001, 2, 'delivered'); -- When User B receives the message
+```
+
+---
+
+### Summary:
+
+- **Step 1**: When you click on a user's profile to chat, you check if a chat exists between them. If not, you create a new `chats` entry and add both users as participants in `chat_participants`.
+- **Step 2**: When a user sends a message, a new message is inserted into the `messages` table, and the status of the message can be tracked in the `message_status` table.
+
+This workflow ensures that a new chat is created only once and that messages are properly tracked within the system.
