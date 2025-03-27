@@ -1,6 +1,8 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/vishalpandhare01/myschool_chat_microservices/internal/model"
 	"github.com/vishalpandhare01/myschool_chat_microservices/internal/repository"
 	"github.com/vishalpandhare01/myschool_chat_microservices/internal/utils"
@@ -45,6 +47,8 @@ func CreateChatServices(body *repository.StartChatBody) interface{} {
 func CreateMessagesServices(body *model.Messages) interface{} {
 	//todo sendor id exist or not check by user microservices
 
+	fmt.Println("Body: ", body)
+
 	//text' , 'image' ,'video' ,'document
 	if body.MessageType != "image" && body.MessageType != "text" && body.MessageType != "video" && body.MessageType != "document" {
 		return utils.ErrorResponse{
@@ -53,21 +57,21 @@ func CreateMessagesServices(body *model.Messages) interface{} {
 		}
 	}
 
-	if body.ChatID != "" {
+	if body.ChatID == "" {
 		return utils.ErrorResponse{
 			Code:    400,
 			Message: "chat id required",
 		}
 	}
 
-	if repository.CheckChatIdWithSendorIdExistRepository(body.ChatID, body.SenderID) {
+	if !repository.CheckChatIdWithSendorIdExistRepository(body.ChatID, body.SenderID) {
 		return utils.ErrorResponse{
 			Code:    403,
 			Message: "Sendor not belongs to chat",
 		}
 	}
 
-	if body.SenderID != "" {
+	if body.SenderID == "" {
 		return utils.ErrorResponse{
 			Code:    400,
 			Message: "SenderID required",
