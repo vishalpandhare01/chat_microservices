@@ -1,4 +1,3 @@
-Ah, I see! You're asking for an actual, real-world example of how the workflow could function in a real-time app. Let me walk you through a **real-time messaging app** that incorporates the structure you've defined, such as chat creation, message sending, and real-time updates.
 
 ### Real-World Example: Real-Time Messaging App Flow
 
