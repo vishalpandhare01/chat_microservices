@@ -151,24 +151,16 @@ type Users struct {
 	SchoolName string
 }
 
-func GetUserChatListRepository(userID string) ([]Users, error) {
-	var users []Users
+func GetUserChatListRepository(userID string) (*[]model.ChatParticipants, error) {
+	var chatsParticipants *[]model.ChatParticipants
 
-	// Fetch all users the logged-in user has chatted with
-	err := initializer.DB.Table("chat_participants as cp").
-		Select("u.id, u.first_name , u.last_name , u.school_name , u.image").
-		Joins("JOIN users u ON u.id = cp.user_id").
-		Joins("JOIN chats c ON c.id = cp.chat_id").
-		Where("cp.chat_id IN (?)",
-			initializer.DB.Table("chat_participants").Select("chat_id").Where("user_id = ?", userID)).
-		Where("cp.user_id != ?", userID).
-		Group("u.id").
-		Find(&users).Error
+	// Fetch all chatsParticipants the logged-in user has chatted with
+	err := initializer.DB.Where("user_id = ?", userID).Find(&chatsParticipants).Error
 
 	if err != nil {
 		return nil, err
 	}
-	return users, nil
+	return chatsParticipants, nil
 }
 
 func RemoveUserFromChatRepository(loggedInUserID, otherUserID string) (interface{}, error) {
